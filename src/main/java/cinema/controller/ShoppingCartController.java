@@ -8,6 +8,8 @@ import cinema.service.MovieSessionService;
 import cinema.service.ShoppingCartService;
 import cinema.service.UserService;
 import cinema.service.mapper.ResponseDtoMapper;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +17,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/shopping-carts")
@@ -24,6 +28,7 @@ public class ShoppingCartController {
     private final UserService userService;
     private final ResponseDtoMapper<ShoppingCartResponseDto, ShoppingCart>
             shoppingCartResponseDtoMapper;
+    private final Logger logger;
 
     public ShoppingCartController(ShoppingCartService shoppingCartService,
                                   UserService userService,
@@ -34,14 +39,19 @@ public class ShoppingCartController {
         this.userService = userService;
         this.movieSessionService = movieSessionService;
         this.shoppingCartResponseDtoMapper = shoppingCartResponseDtoMapper;
+        this.logger = LogManager.getLogger(OrderController.class);
     }
 
     @PutMapping("/movie-sessions")
     public void addToCart(Authentication auth, @RequestParam Long movieSessionId) {
         UserDetails details = (UserDetails) auth.getPrincipal();
         String email = details.getUsername();
-        User user = userService.findByEmail(email).orElseThrow(
-                () -> new RuntimeException("User with email " + email + " not found"));
+        Optional<User> userByEmail = userService.findByEmail(email);
+        if (userByEmail.isEmpty()) {
+            logger.error("User with email " + email + " not found");
+            throw new RuntimeException("User with email " + email + " not found");
+        }
+        User user = userByEmail.get();
         MovieSession movieSession = movieSessionService.get(movieSessionId);
         shoppingCartService.addSession(movieSession, user);
     }
@@ -50,8 +60,12 @@ public class ShoppingCartController {
     public ShoppingCartResponseDto getByUser(Authentication auth) {
         UserDetails details = (UserDetails) auth.getPrincipal();
         String email = details.getUsername();
-        User user = userService.findByEmail(email).orElseThrow(
-                () -> new RuntimeException("User with email " + email + " not found"));
+        Optional<User> userByEmail = userService.findByEmail(email);
+        if (userByEmail.isEmpty()) {
+            logger.error("User with email " + email + " not found");
+            throw new RuntimeException("User with email " + email + " not found");
+        }
+        User user = userByEmail.get();
         return shoppingCartResponseDtoMapper.mapToDto(shoppingCartService.getByUser(user));
     }
 }

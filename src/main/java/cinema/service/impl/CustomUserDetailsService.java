@@ -3,6 +3,9 @@ package cinema.service.impl;
 import cinema.model.User;
 import cinema.service.UserService;
 import java.util.Optional;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.User.UserBuilder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,10 +16,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
     private final UserService userService;
+    private final Logger logger;
 
     @Autowired
     public CustomUserDetailsService(UserService userService) {
         this.userService = userService;
+        logger = LogManager.getLogger(CustomUserDetailsService.class);
     }
 
     @Override
@@ -32,6 +37,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                     .toArray(String[]::new));
             return builder.build();
         }
-        throw new UsernameNotFoundException("User not found");
+        logger.error("User not found by username: " + username);
+        throw new UsernameNotFoundException("User not found by username: " + username);
     }
 }

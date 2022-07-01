@@ -27,6 +27,8 @@ public class MovieSessionDaoImpl extends AbstractDao<MovieSession> implements Mo
             getAvailableSessions.setParameter("date", date.toString());
             return getAvailableSessions.getResultList();
         } catch (Exception e) {
+            logger.error("Session for movie with id "
+                    + movieId + " and show date " + date + " not found");
             throw new DataProcessingException("Session for movie with id "
                     + movieId + " and show date " + date + " not found", e);
         }
